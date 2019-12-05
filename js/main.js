@@ -27,102 +27,152 @@
     响应内容:mv的地址
 */
 
-header('Access-Control-Allow-Origin:*');
-header('Access-Control-Allow-Headers:content-type');
-header('Access-Control-Request-Method:GET,POST');
+// 设置axios的基地址
+axios.defaults.baseURL = 'https://autumnfish.cn';
+// axios.defaults.baseURL = 'http://localhost:3000';
+
+// 实例化vue
 var app = new Vue({
   el: "#player",
   data: {
-    // 查询关键字
-    query: "",
-    // 歌曲数组
+    // 搜索关键字
+    query: '邓紫棋',
+    // 歌曲列表
     musicList: [],
-    // 歌曲地址
-    musicUrl: "",
-    // 歌曲封面
-    musicCover: "",
-    // 歌曲评论
+    // 歌曲url
+    musicUrl: '',
+    // 是否正在播放
+    isPlay: false,
+    // 歌曲热门评论
     hotComments: [],
-    // 动画播放状态
-    isPlaying: false,
-    // 遮罩层的显示状态
-    isShow: false,
+    // 歌曲封面地址
+    coverUrl: '',
+    // 显示视频播放
+    showVideo: false,
     // mv地址
-    mvUrl: ""
+    mvUrl: '',
+    //歌曲标题
+    musicTitle: '',
+    //当前播放歌曲下标
+    musicIndex: 0
   },
+  mounted() {
+    this.searchMusic()
+    this.query = ''
+  },
+  // 方法
   methods: {
-    // 歌曲搜索
-    searchMusic: function () {
-      var that = this;
-      axios.get("https://autumnfish.cn/search?keywords=" + this.query).then(
-        function (response) {
-          // console.log(response);
-          that.musicList = response.data.result.songs;
-          console.log(response.data.result.songs);
-        },
-        function (err) { }
-      );
-    },
-    // 歌曲播放
-    playMusic: function (musicId) {
-      //   console.log(musicId);
-      var that = this;
-      // 获取歌曲地址
-      axios.get("https://autumnfish.cn/song/url?id=" + musicId).then(
-        function (response) {
-          // console.log(response);
-          // console.log(response.data.data[0].url);
-          that.musicUrl = response.data.data[0].url;
-        },
-        function (err) { }
-      );
+    // 搜索歌曲
+    searchMusic() {
+      if (this.query == 0) {
+        return
+      }
 
-      // 歌曲详情获取
-      axios.get("https://autumnfish.cn/song/detail?ids=" + musicId).then(
-        function (response) {
-          // console.log(response);
-          // console.log(response.data.songs[0].al.picUrl);
-          that.musicCover = response.data.songs[0].al.picUrl;
-        },
-        function (err) { }
-      );
+      axios.get('/search?keywords=' + this.query).then(response => {
 
-      // 歌曲评论获取
-      axios.get("https://autumnfish.cn/comment/hot?type=0&id=" + musicId).then(
-        function (response) {
-          // console.log(response);
-          // console.log(response.data.hotComments);
-          that.hotComments = response.data.hotComments;
-        },
-        function (err) { }
-      );
+        // 保存内容
+        this.musicList = response.data.result.songs;
+        this.musicIndex = -1
+
+      })
+
+      // 清空搜索
+      //this.query = ''
+
+      //使文本框失焦
+      //this.$refs.search.blur()
     },
-    // 歌曲播放
-    play: function () {
-      // console.log("play");
-      this.isPlaying = true;
+    // 播放歌曲
+    playMusic(music, index) {
+      //当前播放歌曲下表
+      this.musicIndex = index
+      // 获取歌曲url
+      axios.get('/song/url?id=' + music.id).then(response => {
+        // 保存歌曲url地址
+        this.musicUrl = response.data.data[0].url
+        if (music.id == 1391453675) {
+          this.musicUrl = 'http://vd3.bdstatic.com/mda-jif1x7cic4zm0wkm/mda-jif1x7cic4zm0wkm.mp3';
+        }
+
+      })
+      // 获取歌曲热门评论
+      axios.get('/comment/hot?type=0&id=' + music.id).then(response => {
+        // console.log(response)
+        // 保存热门评论
+        this.hotComments = response.data.hotComments
+
+      })
+      // 获取歌曲封面
+      axios.get('/song/detail?ids=' + music.id).then(response => {
+        // console.log(response)
+        // 设置封面
+        this.coverUrl = response.data.songs[0].al.picUrl
+      })
+
+      //设置歌曲头
+      this.musicTitle = music.artists.reduce((preValue, item) => {
+        preValue = preValue && preValue + '，'
+        return preValue + ' ' + item.name
+      }, '') + ' - ' + music.name
+
     },
-    // 歌曲暂停
-    pause: function () {
-      // console.log("pause");
-      this.isPlaying = false;
+    // audio的play事件
+    play() {
+      this.isPlay = true
+      // 清空mv的信息
+      this.mvUrl = ''
+    },
+    // audio的pause事件
+    pause() {
+      this.isPlay = false
     },
     // 播放mv
-    playMV: function (mvid) {
-      var that = this;
-      axios.get("https://autumnfish.cn/mv/url?id=" + mvid).then(
-        function (response) {
-          // console.log(response);
-          console.log(response.data.data.url);
-          that.isShow = true;
-          that.mvUrl = response.data.data.url;
-        },
-        function (err) { }
-      );
+    playMv(vid) {
+      if (vid) {
+        this.showVideo = true;
+        // 获取mv信息
+        axios.get('/mv/url?id=' + vid).then(response => {
+          // console.log(response)
+          // 暂停歌曲播放
+          this.$refs.audio.pause()
+          // 获取mv地址
+          this.mvUrl = response.data.data.url
+        })
+      }
     },
-    // 隐藏
-    hide: function () {
-      this.isShow = false;
+    // 关闭mv界面
+    closeMv() {
+      this.showVideo = false
+      this.$refs.video.pause()
+    },
+    // 搜索历史记录中的歌曲
+    historySearch(history) {
+      this.query = history
+      this.searchMusic()
+      this.showHistory = false;
+    },
+    //歌曲播放完
+    musicEnd() {
+      console.log('播放完成')
+      //下一曲
+      console.log(this.musicList.length)
+      if (this.musicList.length > this.musicIndex + 1) {
+        this.musicIndex++
+
+      } else {
+        this.musicIndex = 0
+
+      }
+      this.playMusic(this.musicList[this.musicIndex], this.musicIndex)
+    },
+    //歌曲播放暂停
+    musicOption() {
+      if (this.isPlay) {
+        this.$refs.audio.pause()
+      } else {
+        this.$refs.audio.play()
+      }
     }
-  }
-});
+  },
+
+})
