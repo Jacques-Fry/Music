@@ -5,7 +5,7 @@
 
 本项目仅为前端练手项目，请勿用作商业用途，请勿通过本项目下载盗版歌曲资源，否则后果自负！
 
-项目由[Jacques-Fry](https://github.com/Jacques-Fry)开发允许任何人下载或使用  
+项目由[Jacques-Fry](https://github.com/Jacques-Fry)[花落泪知雨]开发允许任何人下载或使用  
 
 [项目网页地址](http://6s.net579.com:24630/)  
 
